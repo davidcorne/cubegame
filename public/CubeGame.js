@@ -27,7 +27,8 @@ var CubeGame = {
     context: null,
     socket: null,
     entites: [],
-    playerEntity: null
+    playerEntity: null,
+    nextEntityId: 0
 };
 
 CubeGame.init = function() {
@@ -76,7 +77,48 @@ CubeGame.initialiseGame = function() {
     CubeGame.KEYBOARD_MAP[40] = function() {
         CubeGame.playerEntity.move({x: 0, y: CubeGame.playerEntity.speed});
     };
+    
+    // a key
+    CubeGame.KEYBOARD_MAP[65] = function() {
+        CubeGame.shoot(
+            {x: CubeGame.playerEntity.x, y: CubeGame.playerEntity.y},
+            {x: -CubeGame.playerEntity.speed, y: 0}
+        );
+    };
+    // w key
+    CubeGame.KEYBOARD_MAP[87] = function() {
+        CubeGame.shoot(
+            {x: CubeGame.playerEntity.x, y: CubeGame.playerEntity.y},
+            {x: 0, y: -CubeGame.playerEntity.speed}
+        );
+    };
+    // d key
+    CubeGame.KEYBOARD_MAP[68] = function() {
+        CubeGame.shoot(
+            {x: CubeGame.playerEntity.x, y: CubeGame.playerEntity.y},
+            {x: CubeGame.playerEntity.speed, y: 0}
+        );
+    };
+    // s key
+    CubeGame.KEYBOARD_MAP[83] = function() {
+        CubeGame.shoot(
+            {x: CubeGame.playerEntity.x, y: CubeGame.playerEntity.y},
+            {x: 0, y: CubeGame.playerEntity.speed}
+        );
+    };
     window.addEventListener("keydown", CubeGame.keyPressed, false);
+};
+
+CubeGame.removeEntity = function(entity) {
+    for (var i = 0; i < CubeGame.entites.length; i += 1) {
+        if (entity.id === CubeGame.entites[i].id) {
+            CubeGame.entites.splice(i, 1);
+        }
+    }
+};
+
+CubeGame.shoot = function(start, vector) {
+    CubeGame.entites.push(new CubeGame.BulletEntity(start, vector));
 };
 
 CubeGame.keyPressed = function(event) {
@@ -108,6 +150,9 @@ CubeGame.loop = function() {
 };
 
 CubeGame.update = function() {
+    for (var index = 0; index < CubeGame.entites.length; index += 1) {
+        CubeGame.entites[index].update();
+    }
 };
 
 CubeGame.render = function() {
@@ -118,7 +163,6 @@ CubeGame.render = function() {
     
 };
 
-//=============================================================================
 CubeGame.Graphics = {
     clear:function() {
         CubeGame.context.clearRect(0, 0, CubeGame.WIDTH, CubeGame.HEIGHT);
@@ -154,11 +198,12 @@ CubeGame.insideScene = function(point) {
 };
 
 CubeGame.PlayerEntity = function(x, y) {
+    this.id = ++CubeGame.nextEntityId;
     this.x = x;
     this.y = y;
     this.speed = 5;
     this.render = function() {
-        CubeGame.Graphics.rectangle(this.x, this.y, 5, 5, "black");
+        CubeGame.Graphics.rectangle(this.x, this.y, 15, 15, "black");
     };
     this.move = function(vector) {
         this.x += vector.x;
@@ -168,9 +213,27 @@ CubeGame.PlayerEntity = function(x, y) {
             this.y -= vector.y;
         }
     };
+    this.update = function() {
+
+    };
 };
 
-
+CubeGame.BulletEntity = function(point, vector) {
+    this.id = ++CubeGame.nextEntityId;
+    this.x = point.x;
+    this.y = point.y;
+    this.vector = vector;
+    this.render = function() {
+        CubeGame.Graphics.circle(this.x, this.y, 3, "red");
+    };
+    this.update = function() {
+        this.x += this.vector.x;
+        this.y += this.vector.y;
+        if (!CubeGame.insideScene({x: this.x, y: this.y})) {
+            CubeGame.removeEntity(this);
+        }
+    };
+};
 // The false means fire the event at bubbling stage, not capturing.
 window.addEventListener("load", CubeGame.init, false);
 window.addEventListener("resize", CubeGame.resize, false);
