@@ -5,6 +5,8 @@ var fs = require("fs");
 var Engine = require("./public/GameEngine");
 
 var nextPlayerID = 0;
+var bullets = [];
+var players = [];
 var entities = [];
 
 app.get("/", function(request, response) {
@@ -39,7 +41,29 @@ io.on("connection", function(client) {
         entities.push(new Engine.PlayerEntity(data.id, data.point));
         client.broadcast.emit("new-player", data);
     });
+    for (var i = 0; i < entities.length; i += 1) {
+        client.emit(
+            "new-" + entities[i].tag, 
+            {id: entities[i].id, point: entities[i].point, vector: entities[i].vector}
+        );
+    }
 });
+
+setInterval(
+    function () {
+        for (var i = 0; i < entities.length; i += 1) {
+            if (entities[i].remove) {
+                io.emit("entity-remove", {id: entities[i].id});
+                entities.splice(i, 1);
+            }
+        }
+        for (var index = 0; index < entities.length; index += 1) {
+            entities[index].update(io);
+        }
+        io.emit("tick", {});
+    }, 
+    17 // millisecond delay
+);
 
 http.listen(3000, function() {
     console.log("Listening on *:3000");

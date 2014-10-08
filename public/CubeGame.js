@@ -1,19 +1,4 @@
 //=============================================================================
-// requestAnimFrame is not well supported so use this shim layer. In reality
-// most modern browsers (including mobile) support it, but Opera Mini doesn't
-// so use this anyway. This is from
-// http://paulirish.com/2011/requestanimationframe-for-smart-animating
-window.requestAnimFrame = (function(){
-  return  window.requestAnimationFrame       || 
-          window.webkitRequestAnimationFrame || 
-          window.mozRequestAnimationFrame    || 
-          window.oRequestAnimationFrame      || 
-          window.msRequestAnimationFrame     || 
-          function(callback){
-            window.setTimeout(callback, 1000 / 60);
-          };
-})();
-
 var CubeGame = {
     RATIO: 0,
     KEYBOARD_MAP: {},
@@ -33,7 +18,6 @@ var CubeGame = {
 CubeGame.init = function() {
     CubeGame.startSocketConnection();
     CubeGame.initialiseGraphics();    
-    CubeGame.loop();
 };
 
 CubeGame.startSocketConnection = function() {
@@ -47,9 +31,16 @@ CubeGame.startSocketConnection = function() {
     CubeGame.socket.on("entity-move", function(data) {
         Engine.entityMove(CubeGame.entities, data.id, data.vector);
     });
+    CubeGame.socket.on("entity-remove", function(data) {
+        Engine.entityRemove(CubeGame.entities, data.id);
+    });
     CubeGame.socket.on("initialise-game", function(data) {
         CubeGame.playerID = data.id;
         CubeGame.initialiseGame();
+    });
+    CubeGame.socket.on("tick", function (data) {
+        CubeGame.update();
+        CubeGame.render();
     });
 };
 
@@ -173,20 +164,11 @@ CubeGame.resize =  function() {
     CubeGame.offset.left = CubeGame.canvas.offsetLeft;
 };
 
-CubeGame.loop = function() {
-    requestAnimFrame(CubeGame.loop);
-    CubeGame.update();
-    CubeGame.render();
-};
-
 CubeGame.update = function() {
     for (var i = 0; i < CubeGame.entities.length; i += 1) {
         if (CubeGame.entities[i].remove) {
             CubeGame.entities.splice(i, 1);
         }
-    }
-    for (var index = 0; index < CubeGame.entities.length; index += 1) {
-        CubeGame.entities[index].update();
     }
 };
 
@@ -222,7 +204,6 @@ CubeGame.Graphics = {
         CubeGame.context.fillText(message, point.x, point.y);
     }
 };
-
 
 // The false means fire the event at bubbling stage, not capturing.
 window.addEventListener("load", CubeGame.init, false);
