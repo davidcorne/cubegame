@@ -49,7 +49,6 @@ CubeGame.startSocketConnection = function() {
     });
     CubeGame.socket.on("initialise-game", function(data) {
         CubeGame.playerID = data.id;
-        CubeGame.entities = data.entities;
         CubeGame.initialiseGame();
     });
 };
